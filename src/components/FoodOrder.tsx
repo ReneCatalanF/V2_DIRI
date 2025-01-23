@@ -16,7 +16,7 @@ function FoodOrder(props: FoodOrderProps) {
     }
 
     //Para traer la fecha actual
-    const [timeData, setTimeData] = useState<TimeData | undefined>(undefined);
+    const [timeData, setTimeData] = useState<TimeData | undefined>({"timeZone": "", "dateTime": ""});
     //const [loading, setLoading] = useState<boolean | undefined>(undefined);
 
     const [quantity, setQuantity] = useState(1);
@@ -27,27 +27,46 @@ function FoodOrder(props: FoodOrderProps) {
     const [isOrder, setisOrder] = useState<boolean | undefined>(undefined);
     const [excede, setExcede] = useState<boolean>(false);
 
-    const _timeZone:string = 'Europe/Amsterdam';
+    const _timeZone: string = 'Europe/Amsterdam';
 
-    const handleClick = () => {
-        logger.debug("Se hace click en Ordenar");
-        menuItems.map(async (item: MenuItem) => {
-            if (item.id === props.food.id) {
-                await fetchData(_timeZone, setTimeData, setisOrder)
-                    .then((resultado) => {
-                        console.log("Resultado:", resultado);
-                            logger.info("Se ordenan " + quantity + " " + item.name + " y a la fecha/hora: "+timeData?.dateTime);
-                            item.quantity = item.quantity - quantity;
-                            setExcede(false);
-                    })
-                    .catch((error) => {
-                        console.error("Hubo un error:", error);
-                    });
+    const handleClick = async () => {
+        let pedido: Pedido | null = null;
+    
+        const itemEncontrado = menuItems.find((item: MenuItem) => item.id === props.food.id);
+    
+        if (itemEncontrado) {
+            try {
+                await fetchData(_timeZone, setTimeData, setisOrder);
+                if (timeData && timeData.dateTime) { 
+                    logger.info("Se ordenan " + quantity + " " + itemEncontrado.name + " y a la fecha/hora: " + timeData.dateTime);
+                    itemEncontrado.quantity = itemEncontrado.quantity - quantity;
+    
+                    pedido = {
+                        "fecha": timeData.dateTime.toString(),
+                        "id_menu": props.food.id,
+                        "nombre_menu": props.food.name,
+                        "cantidad": quantity,
+                        "precio_total": (props.food.price * quantity)
+                    };
+    
+                    logger.info("Aqui esta el nuevo pedido: " + pedido.id_menu + " " + pedido.nombre_menu + " " + pedido.fecha + " " + pedido.cantidad + " " + pedido.precio_total);
+                    setExcede(false);
+                } else {
+                    logger.error("Error: timeData o timeData.dateTime son undefined después de fetchData.");
+                }
+    
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                logger.error("Error en fetchData: ");
+                return;
             }
-        });
-        setExcede(false);
-        setisOrder(true);
-        //props.onReturnToMenu();
+        } else {
+            logger.warn("No se encontró el item con id: " + props.food.id);
+        }
+    
+        if (pedido) {
+            console.log("Pedido listo para enviar:", pedido);
+        }
     };
 
     const handleExcede = () => {
@@ -59,25 +78,25 @@ function FoodOrder(props: FoodOrderProps) {
     };
 
     const handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        logger.debug("Se cambia cantidad de hamburguesas a solciitar");
+        //logger.debug("Se cambia cantidad de hamburguesas a solciitar");
         const inputValue = event.target.value;
         const parsedQuantity = parseInt(inputValue, 10); // Convierte a número
 
         if (!isNaN(parsedQuantity)) { // Verifica si la conversión fue exitosa
 
             if (parsedQuantity < props.food.quantity - 1) {
-                logger.info("Se convierte OK a numero: " + parsedQuantity + " y nuevo precio actualizado: " + props.food.price * parsedQuantity);
+                //logger.info("Se convierte OK a numero: " + parsedQuantity + " y nuevo precio actualizado: " + props.food.price * parsedQuantity);
                 setSelectQuantity(0);
                 setExcede(false);
                 setQuantity(parsedQuantity);
             } else {
-                logger.error("Se excede cantidad máxima que se puede solicitar");
+                //logger.error("Se excede cantidad máxima que se puede solicitar");
                 setSelectQuantity(parsedQuantity);
                 setExcede(true);
             }
 
         } else if (inputValue === "") {
-            logger.error("Error al convertir numero, se vuelve 0");
+            //logger.error("Error al convertir numero, se vuelve 0");
             setQuantity(0); // Permite borrar el input y volver a 0
         }
     };

@@ -1,4 +1,5 @@
 import { TimeData } from "../entites/entities";
+import logger from "./logging";
 
 const fetchData = async (
     timeZone: string,
@@ -13,11 +14,13 @@ const fetchData = async (
             throw new Error(`Error: ${response.status}`);
         }
         const data: TimeData = await response.json();
+        //logger.debug("Dato recuperado de fecha: "+data.dateTime.toString());
         setTimeData(data);
     } catch (error) {
         console.error("Fetch error:", error);
         setTimeData(undefined);
     } finally {
+        logger.debug("Finaliza");
         setLoading(false);
     }
 };

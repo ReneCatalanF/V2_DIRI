@@ -8,8 +8,7 @@ export interface MenuItem {
 }
 
 export interface Pedido{
-    id: number,
-    fecha: string,
+    fecha: string|undefined,
     id_menu: number,
     nombre_menu: string,
     cantidad: number,
