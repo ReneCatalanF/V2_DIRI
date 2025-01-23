@@ -3,6 +3,8 @@ import './Foods.css'
 import FoodOrder from './FoodOrder'
 import ima from '../images/Hamburg.jpg';
 import { useState } from 'react';
+import ErrorBoundary from '../services/ErrorBoundaries'
+import logger from '../services/logging';
 
 interface FoodsProps {
     foodItems: MenuItem[];
@@ -17,6 +19,7 @@ function Foods(props: FoodsProps) {
     };
 
     const handleClick = (menu: MenuItem) => {
+        logger.debug("El usuario quiere ordenar: "+menu.name);
         setfoodSelect(menu);
         setfoodOrder(!foodOrder);
     };
@@ -48,7 +51,11 @@ function Foods(props: FoodsProps) {
                 </>
             )
             }
-            {foodOrder && <FoodOrder food={foodSelect!} onReturnToMenu={handleReturnToMenu}></FoodOrder>}
+            {foodOrder && 
+            <ErrorBoundary fallback={<div>¡No nos quedan de esas hamburguesas!</div>}><FoodOrder food={foodSelect!} onReturnToMenu={handleReturnToMenu}></FoodOrder></ErrorBoundary>
+            
+            
+            }
         </>
     );
 };
