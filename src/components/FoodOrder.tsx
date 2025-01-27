@@ -5,6 +5,8 @@ import './FoorOrder.css';
 import ima from '../images/Hamburg.jpg';
 import logger from "../services/logging";
 import fetchData from "../services/FetchTime";
+import { db } from "../services/FirebaseStorage";
+import { push, ref } from "firebase/database";
 
 interface FoodOrderProps {
     food: MenuItem;
@@ -16,7 +18,7 @@ function FoodOrder(props: FoodOrderProps) {
     }
 
     //Para traer la fecha actual
-    const [timeData, setTimeData] = useState<TimeData | undefined>({"timeZone": "", "dateTime": ""});
+    const [timeData, setTimeData] = useState<TimeData | undefined>({ "timeZone": "", "dateTime": "" });
     //const [loading, setLoading] = useState<boolean | undefined>(undefined);
 
     const [quantity, setQuantity] = useState(1);
@@ -30,32 +32,18 @@ function FoodOrder(props: FoodOrderProps) {
     const _timeZone: string = 'Europe/Amsterdam';
 
     const handleClick = async () => {
-        let pedido: Pedido | null = null;
-    
+
+
         const itemEncontrado = menuItems.find((item: MenuItem) => item.id === props.food.id);
-    
+
         if (itemEncontrado) {
             try {
-                await fetchData(_timeZone, setTimeData, setisOrder);
-                if (timeData && timeData.dateTime) { 
-                    logger.info("Se ordenan " + quantity + " " + itemEncontrado.name + " y a la fecha/hora: " + timeData.dateTime);
-                    itemEncontrado.quantity = itemEncontrado.quantity - quantity;
-    
-                    pedido = {
-                        "fecha": timeData.dateTime.toString(),
-                        "id_menu": props.food.id,
-                        "nombre_menu": props.food.name,
-                        "cantidad": quantity,
-                        "precio_total": (props.food.price * quantity)
-                    };
-    
-                    logger.info("Aqui esta el nuevo pedido: " + pedido.id_menu + " " + pedido.nombre_menu + " " + pedido.fecha + " " + pedido.cantidad + " " + pedido.precio_total);
-                    setExcede(false);
-                } else {
-                    logger.error("Error: timeData o timeData.dateTime son undefined después de fetchData.");
-                }
-    
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                setTimeData(await fetchData(_timeZone, setTimeData, setisOrder));
+
+                itemEncontrado.quantity = itemEncontrado.quantity - quantity;
+
+
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
                 logger.error("Error en fetchData: ");
                 return;
@@ -63,10 +51,8 @@ function FoodOrder(props: FoodOrderProps) {
         } else {
             logger.warn("No se encontró el item con id: " + props.food.id);
         }
-    
-        if (pedido) {
-            console.log("Pedido listo para enviar:", pedido);
-        }
+
+
     };
 
     const handleExcede = () => {
@@ -100,6 +86,27 @@ function FoodOrder(props: FoodOrderProps) {
             setQuantity(0); // Permite borrar el input y volver a 0
         }
     };
+
+    const crearPedido = async () => {
+        let pedido: Pedido | null = null;
+        pedido = {
+            "fecha": timeData!.dateTime.toString(),
+            "id_menu": props.food.id,
+            "nombre_menu": props.food.name,
+            "cantidad": quantity,
+            "precio_total": (props.food.price * quantity)
+        };
+
+        if (pedido) {
+            console.log("Pedido listo para enviar:", pedido);
+            const itemsRef = ref(db, "pedidos");
+            await push(itemsRef, pedido);
+            //logger.info("Aqui esta el nuevo pedido: " + pedido.id_menu + " " + pedido.nombre_menu + " " + pedido.fecha + " " + pedido.cantidad + " " + pedido.precio_total);
+        }
+        setExcede(false);
+
+
+    }
 
 
     return (
@@ -147,11 +154,14 @@ function FoodOrder(props: FoodOrderProps) {
                         onChange={handleQuantityChange}
                         min="0"
                     />
-                    <button onClick={() =>
-                        handleClick()}>Ordenar</button>
+                    <button onClick={async () => {
+                        await handleClick();
+                        crearPedido();
+                    }
+                    }>Ordenar</button>
                 </div>
                 <button onClick={props.onReturnToMenu}>Volver al menú</button>
-            </div>
+            </div >
         </>
     );
 };

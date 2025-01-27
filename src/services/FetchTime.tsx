@@ -1,11 +1,11 @@
-import { TimeData } from "../entites/entities";
+import { TimeData } from '../entites/entities';
 import logger from "./logging";
 
 const fetchData = async (
     timeZone: string,
     setTimeData: (data?: TimeData) => void,
     setLoading: (loading?: boolean) => void
-): Promise<void> => {
+): Promise<TimeData|undefined> => {
     setLoading(true);
     try {
         const response =
@@ -16,6 +16,7 @@ const fetchData = async (
         const data: TimeData = await response.json();
         //logger.debug("Dato recuperado de fecha: "+data.dateTime.toString());
         setTimeData(data);
+        return (data)
     } catch (error) {
         console.error("Fetch error:", error);
         setTimeData(undefined);
