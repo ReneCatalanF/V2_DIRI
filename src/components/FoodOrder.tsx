@@ -1,4 +1,4 @@
-import { MouseEventHandler, useContext, useState } from "react";
+import { MouseEventHandler, useContext, useEffect, useState } from "react";
 import { MenuItem, TimeData, Pedido } from '../entites/entities';
 import { foodItemsContext } from "../App";
 import './FoorOrder.css';
@@ -103,11 +103,25 @@ function FoodOrder(props: FoodOrderProps) {
             await push(itemsRef, pedido);
             //logger.info("Aqui esta el nuevo pedido: " + pedido.id_menu + " " + pedido.nombre_menu + " " + pedido.fecha + " " + pedido.cantidad + " " + pedido.precio_total);
         }
-        setExcede(false);
+        //setExcede(false);
 
 
     }
 
+
+    useEffect(() => {
+        if (isOrder === false && timeData) {
+          async function realizarPedido() {
+            try {
+              await crearPedido();
+              setExcede(false);
+            } catch (error) {
+              console.error('Error al crear pedido:', error);
+            }
+          }
+          realizarPedido();
+        }
+      }, [isOrder ,timeData]);
 
     return (
         <>
@@ -115,6 +129,8 @@ function FoodOrder(props: FoodOrderProps) {
                 <p>Realizando petición de datos...</p>
             ) : isOrder === false && timeData ? (
                 <div>
+                    {//crearPedido();
+                    }
                     <h4>Pedido realizado</h4>
                     <p>Hora actual: {timeData.dateTime}</p>
                 </div>
@@ -156,7 +172,7 @@ function FoodOrder(props: FoodOrderProps) {
                     />
                     <button onClick={async () => {
                         await handleClick();
-                        crearPedido();
+                        //crearPedido();
                     }
                     }>Ordenar</button>
                 </div>
